@@ -41,7 +41,7 @@
     <el-card class="table-card">
       <div slot="header" class="card-header">
         <span>图书列表</span>
-        <el-button type="primary" icon="el-icon-plus" @click="handleAdd">
+        <el-button v-if="isAdmin" type="primary" icon="el-icon-plus" @click="handleAdd">
           新增图书
         </el-button>
       </div>
@@ -78,18 +78,18 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template slot-scope="scope">
-            <el-button type="text" size="small" @click="handleEdit(scope.row)">
+            <el-button v-if="isAdmin" type="primary" size="small" @click="handleEdit(scope.row)">
               编辑
             </el-button>
-            <el-button type="text" size="small" @click="handleView(scope.row)">
+            <el-button type="info" size="small" @click="handleView(scope.row)">
               详情
             </el-button>
             <el-button 
-              type="text" 
-              size="small" 
-              style="color: #F5222D"
+              v-if="isAdmin"
+              type="danger" 
+              size="small"
               @click="handleDelete(scope.row)"
             >
               删除
@@ -208,9 +208,13 @@
 <script>
 import { getBookList, addBook, updateBook, deleteBook } from '@/api/book'
 import { getCategoryList } from '@/api/category'
+import { mapGetters } from 'vuex'
 
 export default {
   name: 'BookManagement',
+  computed: {
+    ...mapGetters(['isAdmin'])
+  },
   data() {
     return {
       loading: false,
@@ -241,11 +245,32 @@ export default {
         description: ''
       },
       rules: {
-        isbn: [{ required: true, message: '请输入ISBN', trigger: 'blur' }],
-        title: [{ required: true, message: '请输入书名', trigger: 'blur' }],
-        author: [{ required: true, message: '请输入作者', trigger: 'blur' }],
-        categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
-        totalQuantity: [{ required: true, message: '请输入库存', trigger: 'blur' }]
+        isbn: [
+          { required: true, message: '请输入ISBN', trigger: 'blur' },
+          { pattern: /^978-?[\d-]+$/, message: '请输入正确的ISBN格式', trigger: 'blur' }
+        ],
+        title: [
+          { required: true, message: '请输入书名', trigger: 'blur' },
+          { min: 1, max: 100, message: '书名长度为1-100个字符', trigger: 'blur' }
+        ],
+        author: [
+          { required: true, message: '请输入作者', trigger: 'blur' },
+          { min: 1, max: 50, message: '作者名长度为1-50个字符', trigger: 'blur' }
+        ],
+        publisher: [
+          { required: true, message: '请输入出版社', trigger: 'blur' }
+        ],
+        categoryId: [
+          { required: true, message: '请选择分类', trigger: 'change' }
+        ],
+        price: [
+          { required: true, message: '请输入价格', trigger: 'blur' },
+          { type: 'number', min: 0, message: '价格不能为负数', trigger: 'blur' }
+        ],
+        totalQuantity: [
+          { required: true, message: '请输入库存', trigger: 'blur' },
+          { type: 'number', min: 0, message: '库存不能为负数', trigger: 'blur' }
+        ]
       }
     }
   },
@@ -309,6 +334,10 @@ export default {
     },
     
     handleAdd() {
+      if (!this.isAdmin) {
+        this.$message.warning('无权限添加图书')
+        return
+      }
       this.dialogTitle = '新增图书'
       this.form = {
         id: null,
@@ -328,6 +357,10 @@ export default {
     },
     
     handleEdit(row) {
+      if (!this.isAdmin) {
+        this.$message.warning('无权限编辑图书')
+        return
+      }
       this.dialogTitle = '编辑图书'
       this.form = { ...row }
       this.dialogVisible = true
@@ -338,6 +371,10 @@ export default {
     },
     
     async handleDelete(row) {
+      if (!this.isAdmin) {
+        this.$message.warning('无权限删除图书')
+        return
+      }
       try {
         await this.$confirm(`确定要删除图书《${row.title}》吗？`, '提示', {
           type: 'warning'

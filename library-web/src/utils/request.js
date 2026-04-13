@@ -3,7 +3,6 @@ import { Message } from 'element-ui'
 import store from '@/store'
 import router from '@/router'
 
-// 创建axios实例
 const service = axios.create({
   baseURL: '/api',
   timeout: 30000,
@@ -12,16 +11,13 @@ const service = axios.create({
   }
 })
 
-// 请求拦截器
 service.interceptors.request.use(
   config => {
-    // 在发送请求之前做些什么
     const token = store.getters.token
     if (token) {
       config.headers['Authorization'] = 'Bearer ' + token
     }
     
-    // 处理FormData请求
     if (config.data instanceof FormData) {
       config.headers['Content-Type'] = 'multipart/form-data'
     }
@@ -29,26 +25,23 @@ service.interceptors.request.use(
     return config
   },
   error => {
-    // 对请求错误做些什么
     console.error('请求错误:', error)
     return Promise.reject(error)
   }
 )
 
-// 响应拦截器
 service.interceptors.response.use(
   response => {
     const res = response.data
     
-    // 如果返回的状态码不是200，说明接口有问题，把错误信息抛出去
     if (res.code !== 200) {
       Message({
         message: res.message || '请求失败',
         type: 'error',
-        duration: 5 * 1000
+        duration: 5 * 1000,
+        offset: 80
       })
       
-      // 401: Token过期或无效
       if (res.code === 401) {
         store.dispatch('logout')
         router.push('/login')
@@ -66,10 +59,10 @@ service.interceptors.response.use(
     Message({
       message: message,
       type: 'error',
-      duration: 5 * 1000
+      duration: 5 * 1000,
+      offset: 80
     })
     
-    // 401 未授权
     if (error.response && error.response.status === 401) {
       store.dispatch('logout')
       router.push('/login')

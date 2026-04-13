@@ -4,23 +4,24 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Date;
 
-/**
- * JWT工具类
- * 用于生成和验证JWT token
- */
+@Slf4j
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret:librarySecretKey2024}")
+    private static final String DEFAULT_SECRET = "librarySecretKey2024LibrarySystemSecureKey";
+    private static final Long DEFAULT_EXPIRATION = 86400000L;
+
+    @Value("${jwt.secret:librarySecretKey2024LibrarySystemSecureKey}")
     private String secret;
     
-    @Value("${jwt.expiration:86400000}")
+    @Value("#{T(java.lang.Long).parseLong('${jwt.expiration:86400000}')}")
     private Long expiration;
     
     private static String staticSecret;
@@ -28,8 +29,17 @@ public class JwtUtil {
     
     @PostConstruct
     public void init() {
-        staticSecret = secret;
-        staticExpiration = expiration;
+        if (secret == null || secret.trim().isEmpty()) {
+            staticSecret = DEFAULT_SECRET;
+        } else {
+            staticSecret = secret;
+        }
+        if (expiration == null || expiration <= 0) {
+            staticExpiration = DEFAULT_EXPIRATION;
+        } else {
+            staticExpiration = expiration;
+        }
+        log.info("JWT工具类初始化完成，密钥长度: {}, 过期时间: {}ms", staticSecret.length(), staticExpiration);
     }
     
     public static String generateToken(Long userId, String username, Integer role) {
@@ -47,6 +57,9 @@ public class JwtUtil {
     }
     
     public static DecodedJWT verifyToken(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("Token不能为空");
+        }
         JWTVerifier verifier = JWT.require(Algorithm.HMAC256(staticSecret)).build();
         return verifier.verify(token);
     }
@@ -72,6 +85,16 @@ public class JwtUtil {
             return jwt.getExpiresAt().before(new Date());
         } catch (Exception e) {
             return true;
+        }
+    }
+    
+    public static boolean validateToken(String token) {
+        try {
+            verifyToken(token);
+            return true;
+        } catch (Exception e) {
+            log.warn("Token验证失败: {}", e.getMessage());
+            return false;
         }
     }
 }

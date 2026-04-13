@@ -26,7 +26,7 @@
     <el-card class="table-card">
       <div slot="header" class="card-header">
         <span>用户列表</span>
-        <el-button type="primary" icon="el-icon-plus" @click="handleAdd">
+        <el-button v-if="isAdmin" type="primary" icon="el-icon-plus" @click="handleAdd">
           新增用户
         </el-button>
       </div>
@@ -55,20 +55,21 @@
               v-model="scope.row.status"
               :active-value="1"
               :inactive-value="0"
+              :disabled="!isAdmin"
               @change="handleStatusChange(scope.row)"
             />
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template slot-scope="scope">
-            <el-button type="text" size="small" @click="handleEdit(scope.row)">
+            <el-button type="primary" size="small" @click="handleEdit(scope.row)" v-if="isAdmin || scope.row.id === userId">
               编辑
             </el-button>
             <el-button 
-              type="text" 
-              size="small" 
-              style="color: #F5222D"
+              v-if="isAdmin"
+              type="danger" 
+              size="small"
               @click="handleDelete(scope.row)"
             >
               删除
@@ -105,7 +106,10 @@
           <el-input v-model="form.username" placeholder="请输入用户名" :disabled="!!form.id" />
         </el-form-item>
         <el-form-item label="密码" prop="password" v-if="!form.id">
-          <el-input v-model="form.password" type="password" placeholder="请输入密码" />
+          <el-input v-model="form.password" type="password" placeholder="请输入密码(6-20位)" show-password />
+        </el-form-item>
+        <el-form-item label="新密码" v-if="form.id">
+          <el-input v-model="form.password" type="password" placeholder="不修改请留空" show-password />
         </el-form-item>
         <el-form-item label="真实姓名" prop="realName">
           <el-input v-model="form.realName" placeholder="请输入真实姓名" />
@@ -135,9 +139,13 @@
 
 <script>
 import { getUserList, addUser, updateUser, deleteUser, updateUserStatus } from '@/api/user'
+import { mapGetters } from 'vuex'
 
 export default {
   name: 'UserManagement',
+  computed: {
+    ...mapGetters(['isAdmin', 'userId'])
+  },
   data() {
     return {
       loading: false,
@@ -162,8 +170,30 @@ export default {
         status: 1
       },
       rules: {
-        username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-        password: [{ required: true, message: '请输入密码', trigger: 'blur', min: 6 }]
+        username: [
+          { required: true, message: '请输入用户名', trigger: 'blur' },
+          { min: 3, max: 20, message: '用户名长度为3-20个字符', trigger: 'blur' },
+          { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' }
+        ],
+        password: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 6, max: 20, message: '密码长度为6-20个字符', trigger: 'blur' }
+        ],
+        realName: [
+          { required: true, message: '请输入真实姓名', trigger: 'blur' },
+          { min: 2, max: 20, message: '姓名长度为2-20个字符', trigger: 'blur' }
+        ],
+        phone: [
+          { required: true, message: '请输入手机号', trigger: 'blur' },
+          { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+        ],
+        email: [
+          { required: true, message: '请输入邮箱', trigger: 'blur' },
+          { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+        ],
+        role: [
+          { required: true, message: '请选择角色', trigger: 'change' }
+        ]
       }
     }
   },
@@ -213,6 +243,10 @@ export default {
     },
     
     handleAdd() {
+      if (!this.isAdmin) {
+        this.$message.warning('无权限添加用户')
+        return
+      }
       this.dialogTitle = '新增用户'
       this.form = {
         id: null,
@@ -228,10 +262,15 @@ export default {
     },
     
     handleEdit(row) {
+      if (!this.isAdmin && row.id !== this.userId) {
+        this.$message.warning('无权限编辑该用户')
+        return
+      }
       this.dialogTitle = '编辑用户'
       this.form = { 
         id: row.id,
         username: row.username,
+        password: '',
         realName: row.realName,
         phone: row.phone,
         email: row.email,
@@ -242,6 +281,10 @@ export default {
     },
     
     async handleDelete(row) {
+      if (!this.isAdmin) {
+        this.$message.warning('无权限删除用户')
+        return
+      }
       try {
         await this.$confirm(`确定要删除用户「${row.username}」吗？`, '提示', {
           type: 'warning'
@@ -260,6 +303,11 @@ export default {
     },
     
     async handleStatusChange(row) {
+      if (!this.isAdmin) {
+        row.status = row.status === 1 ? 0 : 1
+        this.$message.warning('无权限修改用户状态')
+        return
+      }
       try {
         const res = await updateUserStatus(row.id, row.status)
         if (res.code === 200) {

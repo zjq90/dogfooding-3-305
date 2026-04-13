@@ -12,7 +12,9 @@ export default new Vuex.Store({
   getters: {
     token: state => state.token,
     userInfo: state => state.userInfo,
-    isLoggedIn: state => !!state.token
+    isLoggedIn: state => !!state.token,
+    isAdmin: state => state.userInfo.role === 1,
+    userId: state => state.userInfo.userId
   },
   mutations: {
     SET_TOKEN(state, token) {

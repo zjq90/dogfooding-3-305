@@ -62,7 +62,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     .or()
                     .like(User::getRealName, keyword)
                     .or()
-                    .like(User::getMobile, keyword));
+                    .like(User::getPhone, keyword));
         }
         
         wrapper.orderByDesc(User::getCreateTime);

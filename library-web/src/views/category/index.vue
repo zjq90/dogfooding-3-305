@@ -3,7 +3,7 @@
     <el-card class="table-card">
       <div slot="header" class="card-header">
         <span>分类列表</span>
-        <el-button type="primary" icon="el-icon-plus" @click="handleAdd">
+        <el-button v-if="isAdmin" type="primary" icon="el-icon-plus" @click="handleAdd">
           新增分类
         </el-button>
       </div>
@@ -22,13 +22,13 @@
         <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column label="操作" width="200" fixed="right">
           <template slot-scope="scope">
-            <el-button type="text" size="small" @click="handleEdit(scope.row)">
+            <el-button v-if="isAdmin" type="primary" size="small" @click="handleEdit(scope.row)">
               编辑
             </el-button>
             <el-button 
-              type="text" 
-              size="small" 
-              style="color: #F5222D"
+              v-if="isAdmin"
+              type="danger" 
+              size="small"
               @click="handleDelete(scope.row)"
             >
               删除
@@ -80,9 +80,13 @@
 
 <script>
 import { getCategoryList, addCategory, updateCategory, deleteCategory } from '@/api/category'
+import { mapGetters } from 'vuex'
 
 export default {
   name: 'CategoryManagement',
+  computed: {
+    ...mapGetters(['isAdmin'])
+  },
   data() {
     return {
       loading: false,
@@ -123,6 +127,10 @@ export default {
     },
     
     handleAdd() {
+      if (!this.isAdmin) {
+        this.$message.warning('无权限添加分类')
+        return
+      }
       this.dialogTitle = '新增分类'
       this.form = {
         id: null,
@@ -136,12 +144,20 @@ export default {
     },
     
     handleEdit(row) {
+      if (!this.isAdmin) {
+        this.$message.warning('无权限编辑分类')
+        return
+      }
       this.dialogTitle = '编辑分类'
       this.form = { ...row }
       this.dialogVisible = true
     },
     
     async handleDelete(row) {
+      if (!this.isAdmin) {
+        this.$message.warning('无权限删除分类')
+        return
+      }
       try {
         await this.$confirm(`确定要删除分类「${row.name}」吗？`, '提示', {
           type: 'warning'
