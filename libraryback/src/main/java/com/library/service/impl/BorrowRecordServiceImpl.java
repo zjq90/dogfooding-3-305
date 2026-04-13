@@ -102,10 +102,14 @@ public class BorrowRecordServiceImpl extends ServiceImpl<BorrowRecordMapper, Bor
         if (record == null) {
             throw new BusinessException("借阅记录不存在");
         }
-        if (record.getStatus() == 1) {
+        if (record.getStatus() == 1 || record.getStatus() == 2) {
             throw new BusinessException("该图书已归还");
         }
         
+        boolean returnSuccess = bookInfoService.returnBook(record.getBookId(), record.getUserId());
+        if (!returnSuccess) {
+            throw new BusinessException("归还失败，库存更新失败");
+        }
 
         record.setReturnDate(LocalDate.now());
         record.setStatus(1);
