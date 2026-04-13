@@ -106,7 +106,12 @@ public class BorrowRecordServiceImpl extends ServiceImpl<BorrowRecordMapper, Bor
             throw new BusinessException("该图书已归还");
         }
         
-
+        // 增加图书库存
+        boolean returnBookSuccess = bookInfoService.returnBook(record.getBookId(), record.getUserId());
+        if (!returnBookSuccess) {
+            throw new BusinessException("归还失败，图书库存更新失败");
+        }
+        
         record.setReturnDate(LocalDate.now());
         record.setStatus(1);
         

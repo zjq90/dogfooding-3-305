@@ -97,4 +97,13 @@ public class BookCategoryServiceImpl extends ServiceImpl<BookCategoryMapper, Boo
         }
         return name;
     }
+    
+    /**
+     * 清除分类缓存
+     */
+    @Override
+    public void clearCategoryCache() {
+        redisTemplate.delete("categories:all");
+        log.info("分类缓存已清除");
+    }
 }

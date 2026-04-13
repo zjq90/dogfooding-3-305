@@ -30,7 +30,7 @@ public class BookInfo {
     private Long categoryId;
     
     @TableField(exist = false)
-    private String category_name;
+    private String categoryName;
     
     private String description;
     
@@ -47,10 +47,10 @@ public class BookInfo {
     private Integer status;
     
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime create_time;
+    private LocalDateTime createTime;
     
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime update_time;
+    private LocalDateTime updateTime;
     
     @TableLogic
     @TableField(select = false)

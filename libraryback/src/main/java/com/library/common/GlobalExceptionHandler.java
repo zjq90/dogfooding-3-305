@@ -2,8 +2,11 @@ package com.library.common;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import javax.validation.ConstraintViolationException;
 
 /**
  * 全局异常处理器
@@ -23,7 +26,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 处理参数校验异常
+     * 处理参数校验异常 (@RequestBody)
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Result<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        log.error("参数校验异常: {}", e.getMessage());
+        String message = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        return Result.error(400, message);
+    }
+
+    /**
+     * 处理参数校验异常 (@RequestParam)
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public Result<Void> handleConstraintViolationException(ConstraintViolationException e) {
+        log.error("参数校验异常: {}", e.getMessage());
+        String message = e.getConstraintViolations().iterator().next().getMessage();
+        return Result.error(400, message);
+    }
+
+    /**
+     * 处理参数绑定异常
      */
     @ExceptionHandler(BindException.class)
     public Result<Void> handleBindException(BindException e) {

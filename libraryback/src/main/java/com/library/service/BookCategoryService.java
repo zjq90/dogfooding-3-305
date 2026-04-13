@@ -16,4 +16,6 @@ public interface BookCategoryService extends IService<BookCategory> {
     List<BookCategory> getCategoryTree();
     
     String getCategoryName(Long categoryId);
+    
+    void clearCategoryCache();
 }

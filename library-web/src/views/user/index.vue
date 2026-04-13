@@ -162,8 +162,20 @@ export default {
         status: 1
       },
       rules: {
-        username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-        password: [{ required: true, message: '请输入密码', trigger: 'blur', min: 6 }]
+        username: [
+          { required: true, message: '请输入用户名', trigger: 'blur' },
+          { min: 3, max: 20, message: '用户名长度为3-20个字符', trigger: 'blur' }
+        ],
+        password: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 6, max: 20, message: '密码长度为6-20个字符', trigger: 'blur' }
+        ],
+        phone: [
+          { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
+        ],
+        email: [
+          { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+        ]
       }
     }
   },
@@ -232,6 +244,7 @@ export default {
       this.form = { 
         id: row.id,
         username: row.username,
+        password: '',
         realName: row.realName,
         phone: row.phone,
         email: row.email,
@@ -276,7 +289,13 @@ export default {
         if (valid) {
           this.submitLoading = true
           try {
-            const api = this.form.id ? updateUser(this.form.id, this.form) : addUser(this.form)
+            // 构建提交数据，编辑时不传密码
+            const submitData = { ...this.form }
+            if (this.form.id) {
+              delete submitData.password
+            }
+            
+            const api = this.form.id ? updateUser(this.form.id, submitData) : addUser(submitData)
             const res = await api
             
             if (res.code === 200) {
