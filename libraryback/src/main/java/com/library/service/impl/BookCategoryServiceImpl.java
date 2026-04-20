@@ -14,10 +14,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * 图书分类服务实现类
- * 提供分类的增删改查和树形结构构建功能
- */
 @Slf4j
 @Service
 public class BookCategoryServiceImpl extends ServiceImpl<BookCategoryMapper, BookCategory> implements BookCategoryService {
@@ -25,26 +21,19 @@ public class BookCategoryServiceImpl extends ServiceImpl<BookCategoryMapper, Boo
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
-    /**
-     * 获取所有分类列表
-     * 使用Redis缓存提高查询效率
-     */
+    private static final String CACHE_KEY_ALL = "categories:all";
+
     @Override
     public List<BookCategory> getAllCategories() {
-        String cacheKey = "categories:all";
-        List<BookCategory> categories = (List<BookCategory>) redisTemplate.opsForValue().get(cacheKey);
+        List<BookCategory> categories = (List<BookCategory>) redisTemplate.opsForValue().get(CACHE_KEY_ALL);
         if (categories == null) {
             log.debug("从数据库加载分类列表");
             categories = baseMapper.selectAllCategories();
-            redisTemplate.opsForValue().set(cacheKey, categories, 10, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(CACHE_KEY_ALL, categories, 10, TimeUnit.MINUTES);
         }
         return categories;
     }
 
-    /**
-     * 获取分类树形结构
-     * 将扁平的分类列表转换为树形结构
-     */
     @Override
     public List<BookCategory> getCategoryTree() {
         List<BookCategory> allCategories = getAllCategories();
@@ -61,11 +50,6 @@ public class BookCategoryServiceImpl extends ServiceImpl<BookCategoryMapper, Boo
         return rootCategories;
     }
     
-    /**
-     * 递归构建分类树
-     * @param parent 父节点
-     * @param allCategories 所有分类列表
-     */
     private void buildCategoryTree(BookCategory parent, List<BookCategory> allCategories) {
         List<BookCategory> children = allCategories.stream()
                 .filter(c -> parent.getId() != null && parent.getId().equals(c.getParentId()))
@@ -78,10 +62,6 @@ public class BookCategoryServiceImpl extends ServiceImpl<BookCategoryMapper, Boo
         }
     }
 
-    /**
-     * 根据分类ID获取分类名称
-     * 使用Redis缓存提高查询效率
-     */
     @Override
     public String getCategoryName(Long categoryId) {
         if (categoryId == null) {
@@ -96,5 +76,42 @@ public class BookCategoryServiceImpl extends ServiceImpl<BookCategoryMapper, Boo
             }
         }
         return name;
+    }
+    
+    @Override
+    public boolean save(BookCategory entity) {
+        boolean result = super.save(entity);
+        if (result) {
+            clearCategoryCache();
+            log.info("分类添加成功，已清除缓存: {}", entity.getName());
+        }
+        return result;
+    }
+    
+    @Override
+    public boolean updateById(BookCategory entity) {
+        boolean result = super.updateById(entity);
+        if (result) {
+            clearCategoryCache();
+            redisTemplate.delete("category:name:" + entity.getId());
+            log.info("分类更新成功，已清除缓存: {}", entity.getName());
+        }
+        return result;
+    }
+    
+    @Override
+    public boolean removeById(java.io.Serializable id) {
+        boolean result = super.removeById(id);
+        if (result) {
+            clearCategoryCache();
+            redisTemplate.delete("category:name:" + id);
+            log.info("分类删除成功，已清除缓存: {}", id);
+        }
+        return result;
+    }
+    
+    private void clearCategoryCache() {
+        redisTemplate.delete(CACHE_KEY_ALL);
+        log.debug("已清除分类列表缓存");
     }
 }

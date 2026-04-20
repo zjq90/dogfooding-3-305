@@ -59,7 +59,7 @@
           <template slot-scope="scope">
             <el-button 
               v-if="scope.row.status === 0"
-              type="text" 
+              type="success" 
               size="small"
               @click="handleReturn(scope.row)"
             >
