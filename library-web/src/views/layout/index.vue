@@ -68,12 +68,12 @@ export default {
   data() {
     return {
       defaultAvatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-      menuList: [
-        { path: '/dashboard', title: '数据概览', icon: 'el-icon-s-data' },
-        { path: '/books', title: '图书管理', icon: 'el-icon-reading' },
-        { path: '/categories', title: '分类管理', icon: 'el-icon-folder-opened' },
-        { path: '/borrow', title: '借阅管理', icon: 'el-icon-document' },
-        { path: '/users', title: '用户管理', icon: 'el-icon-user' }
+      allMenuList: [
+        { path: '/dashboard', title: '数据概览', icon: 'el-icon-s-data', roles: [0, 1] },
+        { path: '/books', title: '图书管理', icon: 'el-icon-reading', roles: [0, 1] },
+        { path: '/categories', title: '分类管理', icon: 'el-icon-folder-opened', roles: [1] },
+        { path: '/borrow', title: '借阅管理', icon: 'el-icon-document', roles: [0, 1] },
+        { path: '/users', title: '用户管理', icon: 'el-icon-user', roles: [1] }
       ]
     }
   },
@@ -81,6 +81,12 @@ export default {
     ...mapGetters(['userInfo']),
     activeMenu() {
       return this.$route.path
+    },
+    menuList() {
+      const userRole = this.userInfo.role || 0
+      return this.allMenuList.filter(menu => {
+        return menu.roles && menu.roles.includes(userRole)
+      })
     }
   },
   methods: {

@@ -1,12 +1,16 @@
 package com.library.controller;
 
+import com.library.common.BusinessException;
 import com.library.common.PageResult;
 import com.library.common.Result;
 import com.library.entity.User;
 import com.library.service.UserService;
+import com.library.util.PasswordUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * 用户管理控制器
@@ -20,15 +24,23 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    private void checkAdmin(HttpServletRequest request) {
+        Integer role = (Integer) request.getAttribute("role");
+        if (role == null || role != 1) {
+            throw new BusinessException("权限不足，只有管理员可以执行此操作");
+        }
+    }
+
     /**
      * 分页查询用户列表
      */
     @GetMapping("/page")
     public Result<PageResult<User>> getUserPage(
+            HttpServletRequest request,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String keyword) {
-        
+        checkAdmin(request);
         PageResult<User> result = userService.getUserPage(page, size, keyword);
         return Result.success(result);
     }
@@ -37,7 +49,12 @@ public class UserController {
      * 根据ID获取用户详情
      */
     @GetMapping("/{id}")
-    public Result<User> getUserById(@PathVariable Long id) {
+    public Result<User> getUserById(HttpServletRequest request, @PathVariable Long id) {
+        Integer role = (Integer) request.getAttribute("role");
+        Long userId = (Long) request.getAttribute("userId");
+        if (role != 1 && !userId.equals(id)) {
+            throw new BusinessException("权限不足");
+        }
         User user = userService.getById(id);
         if (user != null) {
             user.setPassword(null);
@@ -50,8 +67,18 @@ public class UserController {
      * 新增用户
      */
     @PostMapping
-    public Result<Void> addUser(@RequestBody User user) {
+    public Result<Void> addUser(HttpServletRequest request, @RequestBody User user) {
+        checkAdmin(request);
         log.info("新增用户: {}", user.getUsername());
+        User existUser = userService.getByUsername(user.getUsername());
+        if (existUser != null) {
+            return Result.error("用户名已存在");
+        }
+        if (user.getPassword() == null || user.getPassword().length() < 6) {
+            return Result.error("密码长度不能少于6位");
+        }
+        user.setPassword(PasswordUtil.encode(user.getPassword()));
+        user.setStatus(user.getStatus() == null ? 1 : user.getStatus());
         boolean success = userService.save(user);
         if (success) {
             log.info("用户添加成功: {}", user.getUsername());
@@ -64,9 +91,13 @@ public class UserController {
      * 更新用户信息
      */
     @PutMapping("/{id}")
-    public Result<Void> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public Result<Void> updateUser(HttpServletRequest request, @PathVariable Long id, @RequestBody User user) {
+        checkAdmin(request);
         log.info("更新用户信息: {}", id);
         user.setId(id);
+        if (user.getPassword() != null && user.getPassword().length() > 0 && user.getPassword().length() < 32) {
+            user.setPassword(PasswordUtil.encode(user.getPassword()));
+        }
         boolean success = userService.updateById(user);
         if (success) {
             log.info("用户更新成功: {}", id);
@@ -79,7 +110,8 @@ public class UserController {
      * 删除用户
      */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteUser(@PathVariable Long id) {
+    public Result<Void> deleteUser(HttpServletRequest request, @PathVariable Long id) {
+        checkAdmin(request);
         log.info("删除用户: {}", id);
         boolean success = userService.removeById(id);
         if (success) {
@@ -93,7 +125,8 @@ public class UserController {
      * 更新用户状态
      */
     @PutMapping("/{id}/status")
-    public Result<Void> updateUserStatus(@PathVariable Long id, @RequestParam Integer status) {
+    public Result<Void> updateUserStatus(HttpServletRequest request, @PathVariable Long id, @RequestParam Integer status) {
+        checkAdmin(request);
         log.info("更新用户状态: {}, 状态: {}", id, status);
         User user = new User();
         user.setId(id);

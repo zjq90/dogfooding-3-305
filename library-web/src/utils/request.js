@@ -12,6 +12,12 @@ const service = axios.create({
   }
 })
 
+// 统一的消息配置，居中显示并下移，不遮挡顶部菜单
+const messageConfig = {
+  offset: 100,
+  duration: 3000
+}
+
 // 请求拦截器
 service.interceptors.request.use(
   config => {
@@ -45,7 +51,7 @@ service.interceptors.response.use(
       Message({
         message: res.message || '请求失败',
         type: 'error',
-        duration: 5 * 1000
+        ...messageConfig
       })
       
       // 401: Token过期或无效
@@ -66,7 +72,7 @@ service.interceptors.response.use(
     Message({
       message: message,
       type: 'error',
-      duration: 5 * 1000
+      ...messageConfig
     })
     
     // 401 未授权

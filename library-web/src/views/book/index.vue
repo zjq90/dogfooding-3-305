@@ -241,11 +241,31 @@ export default {
         description: ''
       },
       rules: {
-        isbn: [{ required: true, message: '请输入ISBN', trigger: 'blur' }],
-        title: [{ required: true, message: '请输入书名', trigger: 'blur' }],
-        author: [{ required: true, message: '请输入作者', trigger: 'blur' }],
+        isbn: [
+          { required: true, message: '请输入ISBN', trigger: 'blur' },
+          { pattern: /^[0-9]{10,13}$/, message: 'ISBN格式不正确', trigger: 'blur' }
+        ],
+        title: [
+          { required: true, message: '请输入书名', trigger: 'blur' },
+          { min: 1, max: 100, message: '书名长度在 1 到 100 个字符', trigger: 'blur' }
+        ],
+        author: [
+          { required: true, message: '请输入作者', trigger: 'blur' },
+          { min: 1, max: 50, message: '作者名称长度在 1 到 50 个字符', trigger: 'blur' }
+        ],
+        publisher: [
+          { required: true, message: '请输入出版社', trigger: 'blur' },
+          { min: 1, max: 50, message: '出版社名称长度在 1 到 50 个字符', trigger: 'blur' }
+        ],
         categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
-        totalQuantity: [{ required: true, message: '请输入库存', trigger: 'blur' }]
+        price: [
+          { required: true, message: '请输入价格', trigger: 'blur' },
+          { type: 'number', min: 0, message: '价格必须大于等于0', trigger: 'blur' }
+        ],
+        totalQuantity: [
+          { required: true, message: '请输入库存', trigger: 'blur' },
+          { type: 'number', min: 0, message: '库存必须大于等于0', trigger: 'blur' }
+        ]
       }
     }
   },

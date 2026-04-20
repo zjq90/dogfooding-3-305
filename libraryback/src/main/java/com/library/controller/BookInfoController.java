@@ -1,15 +1,19 @@
 package com.library.controller;
 
+import com.library.common.BusinessException;
 import com.library.common.PageResult;
 import com.library.common.Result;
 import com.library.entity.BookInfo;
 import com.library.service.BookInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 图书信息控制器
@@ -22,6 +26,26 @@ public class BookInfoController {
 
     @Autowired
     private BookInfoService bookInfoService;
+    
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    private void checkAdmin(HttpServletRequest request) {
+        Integer role = (Integer) request.getAttribute("role");
+        if (role == null || role != 1) {
+            throw new BusinessException("权限不足，只有管理员可以执行此操作");
+        }
+    }
+    
+    private void clearBookCache(Long bookId) {
+        if (bookId != null) {
+            redisTemplate.delete("book:" + bookId);
+        }
+        Set<String> keys = redisTemplate.keys("stats:book*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+    }
 
     /**
      * 分页查询图书列表
@@ -53,10 +77,21 @@ public class BookInfoController {
      * 新增图书
      */
     @PostMapping
-    public Result<Void> addBook(@RequestBody BookInfo book) {
+    public Result<Void> addBook(HttpServletRequest request, @RequestBody BookInfo book) {
+        checkAdmin(request);
+        if (book.getTitle() == null || book.getTitle().trim().isEmpty()) {
+            return Result.error("图书名称不能为空");
+        }
+        if (book.getIsbn() == null || book.getIsbn().trim().isEmpty()) {
+            return Result.error("ISBN不能为空");
+        }
+        if (book.getAvailableQuantity() == null) {
+            book.setAvailableQuantity(book.getTotalQuantity() != null ? book.getTotalQuantity() : 0);
+        }
         log.info("新增图书: {}", book.getTitle());
         boolean success = bookInfoService.save(book);
         if (success) {
+            clearBookCache(null);
             log.info("图书添加成功: {}", book.getTitle());
             return Result.success("添加成功");
         }
@@ -67,11 +102,13 @@ public class BookInfoController {
      * 更新图书信息
      */
     @PutMapping("/{id}")
-    public Result<Void> updateBook(@PathVariable Long id, @RequestBody BookInfo book) {
+    public Result<Void> updateBook(HttpServletRequest request, @PathVariable Long id, @RequestBody BookInfo book) {
+        checkAdmin(request);
         log.info("更新图书信息: {}", id);
         book.setId(id);
         boolean success = bookInfoService.updateById(book);
         if (success) {
+            clearBookCache(id);
             log.info("图书更新成功: {}", id);
             return Result.success("更新成功");
         }
@@ -82,10 +119,12 @@ public class BookInfoController {
      * 删除图书
      */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteBook(@PathVariable Long id) {
+    public Result<Void> deleteBook(HttpServletRequest request, @PathVariable Long id) {
+        checkAdmin(request);
         log.info("删除图书: {}", id);
         boolean success = bookInfoService.removeById(id);
         if (success) {
+            clearBookCache(id);
             log.info("图书删除成功: {}", id);
             return Result.success("删除成功");
         }

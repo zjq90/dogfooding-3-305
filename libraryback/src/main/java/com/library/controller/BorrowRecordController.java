@@ -1,5 +1,6 @@
 package com.library.controller;
 
+import com.library.common.BusinessException;
 import com.library.common.PageResult;
 import com.library.common.Result;
 import com.library.entity.BorrowRecord;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
@@ -28,14 +30,22 @@ public class BorrowRecordController {
      */
     @GetMapping("/page")
     public Result<PageResult<BorrowRecord>> getBorrowPage(
+            HttpServletRequest request,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) Long bookId,
             @RequestParam(required = false) Integer status) {
+        Integer role = (Integer) request.getAttribute("role");
+        Long currentUserId = (Long) request.getAttribute("userId");
         
-        PageResult<BorrowRecord> result = borrowRecordService.getBorrowPage(page, size, userId, bookId, status);
-        return Result.success(result);
+        if (role != null && role == 1) {
+            PageResult<BorrowRecord> result = borrowRecordService.getBorrowPage(page, size, userId, bookId, status);
+            return Result.success(result);
+        } else {
+            PageResult<BorrowRecord> result = borrowRecordService.getBorrowPage(page, size, currentUserId, bookId, status);
+            return Result.success(result);
+        }
     }
 
     /**
@@ -55,10 +65,19 @@ public class BorrowRecordController {
      */
     @PostMapping
     public Result<Void> borrowBook(
-            @RequestAttribute Long userId,
+            HttpServletRequest request,
             @RequestParam Long bookId,
             @RequestParam(defaultValue = "30") Integer borrowDays) {
-        
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return Result.error("用户未登录");
+        }
+        if (bookId == null) {
+            return Result.error("请选择图书");
+        }
+        if (borrowDays == null || borrowDays < 1 || borrowDays > 60) {
+            return Result.error("借阅天数必须在1-60天之间");
+        }
         log.info("用户 {} 借阅图书 {}, 借阅天数: {}天", userId, bookId, borrowDays);
         
         boolean success = borrowRecordService.borrowBook(userId, bookId, borrowDays);
@@ -73,7 +92,14 @@ public class BorrowRecordController {
      * 归还图书
      */
     @PutMapping("/{id}/return")
-    public Result<Void> returnBook(@PathVariable Long id) {
+    public Result<Void> returnBook(HttpServletRequest request, @PathVariable Long id) {
+        if (id == null) {
+            return Result.error("记录ID不能为空");
+        }
+        Integer role = (Integer) request.getAttribute("role");
+        if (role == null || role != 1) {
+            throw new BusinessException("权限不足，只有管理员可以执行归还操作");
+        }
         log.info("归还图书，记录ID: {}", id);
         
         boolean success = borrowRecordService.returnBook(id);
@@ -89,11 +115,14 @@ public class BorrowRecordController {
      */
     @GetMapping("/my")
     public Result<PageResult<BorrowRecord>> getMyBorrows(
-            @RequestAttribute Long userId,
+            HttpServletRequest request,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Integer status) {
-        
+        Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) {
+            return Result.error("用户未登录");
+        }
         PageResult<BorrowRecord> result = borrowRecordService.getBorrowPage(page, size, userId, null, status);
         return Result.success(result);
     }
