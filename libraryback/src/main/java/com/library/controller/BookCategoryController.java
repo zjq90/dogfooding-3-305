@@ -59,6 +59,7 @@ public class BookCategoryController {
         log.info("新增分类: {}", category.getName());
         boolean success = categoryService.save(category);
         if (success) {
+            categoryService.clearCategoryCache();
             log.info("分类添加成功: {}", category.getName());
             return Result.success("添加成功");
         }
@@ -74,6 +75,7 @@ public class BookCategoryController {
         category.setId(id);
         boolean success = categoryService.updateById(category);
         if (success) {
+            categoryService.clearCategoryCache();
             log.info("分类更新成功: {}", id);
             return Result.success("更新成功");
         }
@@ -88,6 +90,7 @@ public class BookCategoryController {
         log.info("删除分类: {}", id);
         boolean success = categoryService.removeById(id);
         if (success) {
+            categoryService.clearCategoryCache();
             log.info("分类删除成功: {}", id);
             return Result.success("删除成功");
         }

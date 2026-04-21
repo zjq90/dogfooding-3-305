@@ -2,12 +2,15 @@ package com.library.controller;
 
 import com.library.common.PageResult;
 import com.library.common.Result;
+import com.library.dto.BorrowRequestDTO;
 import com.library.entity.BorrowRecord;
 import com.library.service.BorrowRecordService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +21,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/borrow")
+@Validated
 public class BorrowRecordController {
 
     @Autowired
@@ -56,14 +60,13 @@ public class BorrowRecordController {
     @PostMapping
     public Result<Void> borrowBook(
             @RequestAttribute Long userId,
-            @RequestParam Long bookId,
-            @RequestParam(defaultValue = "30") Integer borrowDays) {
+            @Valid @RequestBody BorrowRequestDTO borrowRequest) {
         
-        log.info("用户 {} 借阅图书 {}, 借阅天数: {}天", userId, bookId, borrowDays);
+        log.info("用户 {} 借阅图书 {}, 借阅天数: {}天", userId, borrowRequest.getBookId(), borrowRequest.getBorrowDays());
         
-        boolean success = borrowRecordService.borrowBook(userId, bookId, borrowDays);
+        boolean success = borrowRecordService.borrowBook(userId, borrowRequest.getBookId(), borrowRequest.getBorrowDays());
         if (success) {
-            log.info("借阅成功: 用户 {}, 图书 {}", userId, bookId);
+            log.info("借阅成功: 用户 {}, 图书 {}", userId, borrowRequest.getBookId());
             return Result.success("借阅成功");
         }
         return Result.error("借阅失败");

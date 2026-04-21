@@ -62,7 +62,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     .or()
                     .like(User::getRealName, keyword)
                     .or()
-                    .like(User::getMobile, keyword));
+                    .like(User::getPhone, keyword));
         }
         
         wrapper.orderByDesc(User::getCreateTime);
@@ -83,6 +83,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setRole(0);
         user.setStatus(1);
         
+        return this.save(user);
+    }
+    
+    @Override
+    public boolean addUser(User user) {
+        user.setPassword(PasswordUtil.encode(user.getPassword()));
+        if (user.getStatus() == null) {
+            user.setStatus(1);
+        }
         return this.save(user);
     }
 

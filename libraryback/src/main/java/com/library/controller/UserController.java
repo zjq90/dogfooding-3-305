@@ -50,9 +50,22 @@ public class UserController {
      * 新增用户
      */
     @PostMapping
-    public Result<Void> addUser(@RequestBody User user) {
+    public Result<Void> addUser(@RequestAttribute Integer role, @RequestBody User user) {
+        // 只有管理员可以新增用户
+        if (role == null || role != 1) {
+            return Result.error(403, "无权操作，需要管理员权限");
+        }
+        // 禁止创建管理员用户
+        if (user.getRole() != null && user.getRole() == 1) {
+            return Result.error(403, "无权创建管理员用户");
+        }
+        // 检查用户名是否已存在
+        User existUser = userService.getByUsername(user.getUsername());
+        if (existUser != null) {
+            return Result.error("用户名已存在");
+        }
         log.info("新增用户: {}", user.getUsername());
-        boolean success = userService.save(user);
+        boolean success = userService.addUser(user);
         if (success) {
             log.info("用户添加成功: {}", user.getUsername());
             return Result.success("添加成功");
@@ -64,7 +77,15 @@ public class UserController {
      * 更新用户信息
      */
     @PutMapping("/{id}")
-    public Result<Void> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public Result<Void> updateUser(@RequestAttribute Integer role, @PathVariable Long id, @RequestBody User user) {
+        // 只有管理员可以更新用户信息
+        if (role == null || role != 1) {
+            return Result.error(403, "无权操作，需要管理员权限");
+        }
+        // 禁止修改用户角色为管理员
+        if (user.getRole() != null && user.getRole() == 1) {
+            return Result.error(403, "无权将用户设为管理员");
+        }
         log.info("更新用户信息: {}", id);
         user.setId(id);
         boolean success = userService.updateById(user);
@@ -79,7 +100,16 @@ public class UserController {
      * 删除用户
      */
     @DeleteMapping("/{id}")
-    public Result<Void> deleteUser(@PathVariable Long id) {
+    public Result<Void> deleteUser(@RequestAttribute Integer role, @PathVariable Long id) {
+        // 只有管理员可以删除用户
+        if (role == null || role != 1) {
+            return Result.error(403, "无权操作，需要管理员权限");
+        }
+        // 禁止删除管理员用户
+        User targetUser = userService.getById(id);
+        if (targetUser != null && targetUser.getRole() != null && targetUser.getRole() == 1) {
+            return Result.error(403, "无权删除管理员用户");
+        }
         log.info("删除用户: {}", id);
         boolean success = userService.removeById(id);
         if (success) {
@@ -93,7 +123,16 @@ public class UserController {
      * 更新用户状态
      */
     @PutMapping("/{id}/status")
-    public Result<Void> updateUserStatus(@PathVariable Long id, @RequestParam Integer status) {
+    public Result<Void> updateUserStatus(@RequestAttribute Integer role, @PathVariable Long id, @RequestParam Integer status) {
+        // 只有管理员可以更新用户状态
+        if (role == null || role != 1) {
+            return Result.error(403, "无权操作，需要管理员权限");
+        }
+        // 禁止修改管理员用户状态
+        User targetUser = userService.getById(id);
+        if (targetUser != null && targetUser.getRole() != null && targetUser.getRole() == 1) {
+            return Result.error(403, "无权修改管理员用户状态");
+        }
         log.info("更新用户状态: {}, 状态: {}", id, status);
         User user = new User();
         user.setId(id);

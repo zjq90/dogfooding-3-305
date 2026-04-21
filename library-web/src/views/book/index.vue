@@ -58,6 +58,7 @@
         <el-table-column prop="title" label="书名" min-width="150" show-overflow-tooltip />
         <el-table-column prop="author" label="作者" width="120" />
         <el-table-column prop="publisher" label="出版社" width="150" show-overflow-tooltip />
+        <el-table-column prop="categoryName" label="分类" width="100" />
         <el-table-column prop="price" label="价格" width="80">
           <template slot-scope="scope">
             ¥{{ scope.row.price }}
@@ -78,22 +79,24 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template slot-scope="scope">
-            <el-button type="text" size="small" @click="handleEdit(scope.row)">
-              编辑
-            </el-button>
-            <el-button type="text" size="small" @click="handleView(scope.row)">
-              详情
-            </el-button>
-            <el-button 
-              type="text" 
-              size="small" 
-              style="color: #F5222D"
-              @click="handleDelete(scope.row)"
-            >
-              删除
-            </el-button>
+            <div style="display: flex; gap: 8px;">
+              <el-button type="text" size="small" @click="handleEdit(scope.row)">
+                编辑
+              </el-button>
+              <el-button type="text" size="small" @click="handleView(scope.row)">
+                详情
+              </el-button>
+              <el-button 
+                type="text" 
+                size="small" 
+                style="color: #F5222D"
+                @click="handleDelete(scope.row)"
+              >
+                删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -241,11 +244,35 @@ export default {
         description: ''
       },
       rules: {
-        isbn: [{ required: true, message: '请输入ISBN', trigger: 'blur' }],
-        title: [{ required: true, message: '请输入书名', trigger: 'blur' }],
-        author: [{ required: true, message: '请输入作者', trigger: 'blur' }],
+        isbn: [
+          { required: true, message: '请输入ISBN', trigger: 'blur' },
+          { pattern: /^[0-9-]{10,17}$/, message: 'ISBN格式不正确，请输入10-17位数字或横线', trigger: 'blur' }
+        ],
+        title: [
+          { required: true, message: '请输入书名', trigger: 'blur' },
+          { min: 1, max: 100, message: '书名长度为1-100个字符', trigger: 'blur' }
+        ],
+        author: [
+          { required: true, message: '请输入作者', trigger: 'blur' },
+          { min: 1, max: 50, message: '作者名长度为1-50个字符', trigger: 'blur' }
+        ],
+        publisher: [
+          { max: 100, message: '出版社名称最多100个字符', trigger: 'blur' }
+        ],
         categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
-        totalQuantity: [{ required: true, message: '请输入库存', trigger: 'blur' }]
+        totalQuantity: [
+          { required: true, message: '请输入库存', trigger: 'blur' },
+          { type: 'number', min: 1, max: 9999, message: '库存必须在1-9999之间', trigger: 'blur' }
+        ],
+        price: [
+          { type: 'number', min: 0, max: 99999, message: '价格必须在0-99999之间', trigger: 'blur' }
+        ],
+        location: [
+          { max: 50, message: '存放位置最多50个字符', trigger: 'blur' }
+        ],
+        description: [
+          { max: 500, message: '简介最多500个字符', trigger: 'blur' }
+        ]
       }
     }
   },

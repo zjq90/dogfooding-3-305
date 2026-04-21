@@ -18,6 +18,8 @@ public interface UserService extends IService<User> {
     
     boolean register(User user);
     
+    boolean addUser(User user);
+    
     boolean updatePassword(Long userId, String oldPassword, String newPassword);
     
     Long getUserCount();
